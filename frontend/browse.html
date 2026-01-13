@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Browse Profiles - Sugar Dating</title>
+<title>Browse - Sugar Dating</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="container">
-  <h2>Browse Profiles</h2>
+  <h2>Browse Sugar Profiles</h2>
   <div id="profiles"></div>
   <button onclick="logout()">Logout</button>
 </div>
@@ -16,34 +16,43 @@
 const token = localStorage.getItem("token");
 
 async function loadProfiles() {
-  const res = await fetch("http://localhost:5000/api/profiles", {
-    headers: { "Authorization": "Bearer " + token }
-  });
+  if (!token) {
+    window.location.href = "login.html";
+    return;
+  }
 
-  const users = await res.json();
-  const container = document.getElementById("profiles");
-  container.innerHTML = "";
+  try {
+    const res = await fetch("https://sugar-dating-site.onrender.com/api/users", {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const data = await res.json();
+    const container = document.getElementById("profiles");
 
-  users.forEach(user => {
-    const card = document.createElement("div");
-    card.className = "profile-card";
-    card.innerHTML = `
-      <h3>${user.name} (${user.role})</h3>
-      <p>${user.bio}</p>
-      <p>${user.location}</p>
-      ${user.photos.map(p => `<img src="${p}">`).join("")}
-      <p>Membership: ${user.membership}</p>
-    `;
-    container.appendChild(card);
-  });
+    if (data.error) {
+      container.innerHTML = `<p>${data.error}</p>`;
+      return;
+    }
+
+    container.innerHTML = data.map(user => `
+      <div class="profile-card">
+        <h3>${user.name} (${user.role})</h3>
+        <p>Email: ${user.email}</p>
+        <p>DOB: ${user.dateOfBirth}</p>
+      </div>
+    `).join("");
+
+  } catch (err) {
+    document.getElementById("profiles").innerHTML = "<p>Network error. Try again.</p>";
+  }
 }
 
 function logout() {
-  localStorage.clear();
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
   window.location.href = "login.html";
 }
 
-loadProfiles();
+window.onload = loadProfiles;
 </script>
 </body>
 </html>
