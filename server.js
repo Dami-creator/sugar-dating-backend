@@ -10,7 +10,7 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-// ⚡ Enable CORS for frontend (testing: allow all origins)
+// ✅ Allow all origins temporarily
 app.use(cors());
 
 // MongoDB connection
@@ -31,7 +31,20 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model("User", userSchema);
 
-// Register endpoint
+// Auth Middleware
+const authMiddleware = (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ error: "No token provided" });
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.userId = decoded.id;
+    next();
+  } catch {
+    res.status(401).json({ error: "Invalid token" });
+  }
+};
+
+// Register
 app.post("/api/auth/register", async (req, res) => {
   try {
     const { name, email, password, dateOfBirth, role } = req.body;
@@ -39,17 +52,10 @@ app.post("/api/auth/register", async (req, res) => {
       return res.status(400).json({ error: "All fields required" });
 
     const existingUser = await User.findOne({ email });
-    if (existingUser)
-      return res.status(400).json({ error: "User already exists" });
+    if (existingUser) return res.status(400).json({ error: "User already exists" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({
-      name,
-      email,
-      password: hashedPassword,
-      dateOfBirth,
-      role
-    });
+    const newUser = new User({ name, email, password: hashedPassword, dateOfBirth, role });
     await newUser.save();
 
     res.json({ message: "User registered successfully" });
@@ -59,10 +65,12 @@ app.post("/api/auth/register", async (req, res) => {
   }
 });
 
-// Login endpoint (optional)
+// Login
 app.post("/api/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: "Email and password required" });
+
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ error: "Invalid email" });
 
@@ -73,6 +81,36 @@ app.post("/api/auth/login", async (req, res) => {
     res.json({ token, user: { name: user.name, email: user.email, role: user.role } });
   } catch (err) {
     console.log(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Browse all users (protected)
+app.get("/api/users", authMiddleware, async (req, res) => {
+  try {
+    const users = await User.find({}, "-password");
+    res.json(users);
+  } catch {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Update profile
+app.put("/api/users/:email", authMiddleware, async (req, res) => {
+  try {
+    const { name, password, dateOfBirth, role } = req.body;
+    const updates = { name, dateOfBirth, role };
+    if (password) updates.password = await bcrypt.hash(password, 10);
+
+    const updated = await User.findOneAndUpdate(
+      { email: req.params.email },
+      updates,
+      { new: true }
+    );
+    if (!updated) return res.status(404).json({ error: "User not found" });
+
+    res.json({ message: "Profile updated successfully" });
+  } catch {
     res.status(500).json({ error: "Server error" });
   }
 });
