@@ -10,11 +10,8 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-// Allow requests from your frontend
-app.use(cors({
-  origin: "https://sugar-dating-site.vercel.app", // Vercel URL
-  credentials: true
-}));
+// ⚡ Enable CORS for frontend (testing: allow all origins)
+app.use(cors());
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
@@ -62,7 +59,7 @@ app.post("/api/auth/register", async (req, res) => {
   }
 });
 
-// Simple login endpoint (optional)
+// Login endpoint (optional)
 app.post("/api/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body;
