@@ -2,38 +2,63 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Update Profile - Sugar Dating</title>
+<title>Profile - Sugar Dating</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="container">
   <h2>Update Profile</h2>
-  <textarea id="bio" placeholder="Bio"></textarea>
-  <input type="text" id="location" placeholder="Location">
-  <input type="text" id="photos" placeholder="Photos (comma separated URLs)">
-  <button onclick="updateProfile()">Update</button>
+  <input type="text" id="name" placeholder="Name">
+  <input type="password" id="password" placeholder="New Password">
+  <input type="date" id="dob">
+  <select id="role">
+    <option value="sugar_mummy">Sugar Mummy</option>
+    <option value="young_adult">Young Adult</option>
+  </select>
+  <button id="updateBtn">Update</button>
   <p id="message"></p>
+  <button onclick="logout()">Logout</button>
 </div>
 
 <script>
 const token = localStorage.getItem("token");
+const user = JSON.parse(localStorage.getItem("user"));
 
-async function updateProfile() {
-  const bio = document.getElementById("bio").value;
-  const location = document.getElementById("location").value;
-  const photos = document.getElementById("photos").value.split(",");
+if (!token) window.location.href = "login.html";
 
-  const res = await fetch("http://localhost:5000/api/profiles", {
-    method: "PUT",
-    headers: { 
-      "Content-Type": "application/json",
-      "Authorization": "Bearer " + token
-    },
-    body: JSON.stringify({ bio, location, photos })
-  });
+// Pre-fill current info
+document.getElementById("name").value = user.name;
+document.getElementById("dob").value = user.dateOfBirth;
+document.getElementById("role").value = user.role;
 
-  const data = await res.json();
-  document.getElementById("message").innerText = data.message;
+document.getElementById("updateBtn").addEventListener("click", async () => {
+  const name = document.getElementById("name").value;
+  const password = document.getElementById("password").value;
+  const dob = document.getElementById("dob").value;
+  const role = document.getElementById("role").value;
+
+  try {
+    const res = await fetch(`https://sugar-dating-site.onrender.com/api/users/${user.email}`, {
+      method: "PUT",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ name, password, dateOfBirth: dob, role })
+    });
+
+    const data = await res.json();
+    document.getElementById("message").innerText = data.message || data.error;
+
+  } catch {
+    document.getElementById("message").innerText = "Network error. Try again.";
+  }
+});
+
+function logout() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  window.location.href = "login.html";
 }
 </script>
 </body>
