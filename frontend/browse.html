@@ -25,6 +25,10 @@ async function loadProfiles() {
     const res = await fetch("https://sugar-dating-site.onrender.com/api/users", {
       headers: { "Authorization": `Bearer ${token}` }
     });
+
+    // Check HTTP response
+    if (!res.ok) throw new Error("HTTP error " + res.status);
+
     const data = await res.json();
     const container = document.getElementById("profiles");
 
@@ -42,7 +46,8 @@ async function loadProfiles() {
     `).join("");
 
   } catch (err) {
-    document.getElementById("profiles").innerHTML = "<p>Network error. Try again.</p>";
+    document.getElementById("profiles").innerHTML = "<p>Network error. Check backend URL and token.</p>";
+    console.log("Fetch error:", err);
   }
 }
 
