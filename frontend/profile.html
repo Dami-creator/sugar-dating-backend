@@ -30,9 +30,7 @@
     <p id="upgradeMessage"></p>
   </div>
 
-  <h3>Browse Sugar Mummy Profiles</h3>
-  <div id="profiles"></div>
-
+  <button onclick="window.location.href='browse.html'">Browse Sugar Mummies</button>
   <button onclick="logout()">Logout</button>
 </div>
 
@@ -40,9 +38,9 @@
 const token = localStorage.getItem("token");
 let user = JSON.parse(localStorage.getItem("user"));
 
-if(!token) window.location.href = "login.html";
+if(!token) window.location.href="login.html";
 
-// Show user info
+// Fill profile
 document.getElementById("name").value = user.name;
 document.getElementById("dob").value = user.dateOfBirth;
 document.getElementById("role").value = user.role;
@@ -52,8 +50,8 @@ document.getElementById("currentImage").src = user.image;
 // Show status
 const statusSpan = document.getElementById("status");
 function updateStatus() {
-  if (user.premium) statusSpan.innerText = "Premium";
-  else if (user.pendingUpgrade) statusSpan.innerText = "Pending Upgrade";
+  if(user.premium) statusSpan.innerText = "Premium";
+  else if(user.pendingUpgrade) statusSpan.innerText = "Pending Upgrade";
   else statusSpan.innerText = "Free";
 }
 updateStatus();
@@ -66,20 +64,20 @@ document.getElementById("updateBtn").addEventListener("click", async () => {
   const role = document.getElementById("role").value;
   const image = document.getElementById("image").value || "https://via.placeholder.com/150";
 
-  try {
+  try{
     const res = await fetch(`https://sugar-dating-site.onrender.com/api/users/${user.email}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-      body: JSON.stringify({ name, password, dateOfBirth: dob, role, image })
+      headers: { "Content-Type":"application/json", "Authorization": `Bearer ${token}` },
+      body: JSON.stringify({name,password,dateOfBirth:dob,role,image})
     });
     const data = await res.json();
     document.getElementById("message").innerText = data.message || data.error;
     if(data.message){
-      user = { ...user, name, dateOfBirth: dob, role, image };
-      localStorage.setItem("user", JSON.stringify(user));
+      user = {...user,name,dateOfBirth:dob,role,image};
+      localStorage.setItem("user",JSON.stringify(user));
       document.getElementById("currentImage").src = image;
     }
-  } catch {
+  }catch{
     document.getElementById("message").innerText = "Network error. Try again.";
   }
 });
@@ -90,11 +88,11 @@ const upgradeMessage = document.getElementById("upgradeMessage");
 
 upgradeBtn.addEventListener("click", async () => {
   const confirmPayment = confirm(
-    "To upgrade to Premium, please pay 5,000 Naira to 2035470745, Kuda MFB.\nClick OK once you have completed payment."
+    "To upgrade to Premium, please pay 5,000 Naira to 2035470745, Kuda MFB.\nClick OK once payment is completed."
   );
   if(!confirmPayment) return;
 
-  try {
+  try{
     const res = await fetch(`https://sugar-dating-site.onrender.com/api/users/request-upgrade/${user.email}`, {
       method: "POST",
       headers: { "Authorization": `Bearer ${token}` }
@@ -104,52 +102,13 @@ upgradeBtn.addEventListener("click", async () => {
     if(data.message){
       user.pendingUpgrade = true;
       localStorage.setItem("user", JSON.stringify(user));
-      upgradeBtn.style.display = "none";
+      upgradeBtn.style.display="none";
       updateStatus();
     }
-  } catch {
+  }catch{
     upgradeMessage.innerText = "Network error. Try again.";
   }
 });
-
-// Browse Sugar Mummy Profiles
-async function loadProfiles() {
-  try {
-    const res = await fetch("https://sugar-dating-site.onrender.com/api/users", {
-      headers: { "Authorization": `Bearer ${token}` }
-    });
-    const data = await res.json();
-    const container = document.getElementById("profiles");
-
-    if(data.error) { container.innerHTML = `<p>${data.error}</p>`; return; }
-    if(data.length === 0){ container.innerHTML = "<p>No profiles available.</p>"; return; }
-
-    container.innerHTML = data
-      .filter(u => u.role === "sugar_mummy") // only show sugar mummies
-      .map(u => `
-      <div class="profile-card">
-        <img src="${u.image}" alt="${u.name}" width="150" height="150">
-        <h3>${u.name}</h3>
-        <p>DOB: ${u.dateOfBirth}</p>
-        ${user.premium ? `<button onclick="startChat('${u.email}','${u.name}')">Chat</button>` : "<p>Premium only</p>"}
-      </div>
-    `).join("");
-
-  } catch(err) {
-    console.log(err);
-    document.getElementById("profiles").innerHTML = "<p>Network error.</p>";
-  }
-}
-window.onload = loadProfiles;
-
-// Start chat (premium only)
-function startChat(email,name){
-  if(!user.premium){
-    alert("Only premium users can chat with sugar mummies.");
-    return;
-  }
-  alert(`Starting chat with ${name} (${email})\n(You can integrate chat system later)`);
-}
 
 // Logout
 function logout(){
