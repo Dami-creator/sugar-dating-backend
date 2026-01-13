@@ -30,7 +30,7 @@ document.getElementById("registerBtn").addEventListener("click", async () => {
   const role = document.getElementById("role").value;
 
   try {
-    const res = await fetch("https://sugar-dating-backend.onrender.com/api/auth/register", {
+    const res = await fetch("https://sugar-dating-site.onrender.com/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password, dateOfBirth: dob, role })
@@ -41,7 +41,6 @@ document.getElementById("registerBtn").addEventListener("click", async () => {
       document.getElementById("message").innerText = data.error;
     } else {
       document.getElementById("message").innerText = data.message;
-      // redirect to login page after successful registration
       setTimeout(() => window.location.href = "login.html", 1500);
     }
   } catch (err) {
